@@ -6,27 +6,27 @@ stages:
     deps:
     - path: data/iris.csv
       hash: md5
-      md5: 4e8db160ecdd5f008c99c3dc99b79beb
-      size: 287
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
     outs:
     - path: data/processed/preprocessed.csv
       hash: md5
-      md5: 18b93aa4a6209ccf88a5112dcd3fc942
-      size: 288
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
   train:
     cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
       train.py
     deps:
     - path: data/iris.csv
       hash: md5
-      md5: 4e8db160ecdd5f008c99c3dc99b79beb
-      size: 287
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
     - path: train.py
       hash: md5
-      md5: 0a03ee2551b027d592b7ffe2d509d92a
-      size: 1863
+      md5: 06adce279f742e752671993d8d5509fb
+      size: 933
     outs:
     - path: model.pkl
       hash: md5
-      md5: 1793335f9031d2655de7c0143033f594
-      size: 37680
+      md5: 56c45053f32a4f74d64222b479fdad1d
+      size: 177393
