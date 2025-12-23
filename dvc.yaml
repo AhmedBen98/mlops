@@ -1,0 +1,8 @@
+stages:
+  preprocess:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - data/iris.csv
+    outs:
+    - data/processed/preprocessed.csv
