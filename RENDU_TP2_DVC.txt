@@ -1,0 +1,393 @@
+================================================================================
+                            RENDU TP2 : DVC
+                        Data Version Control
+================================================================================
+
+Étudiant : ABDERRAZAK
+Date : 23 décembre 2025
+
+================================================================================
+ÉTAPE 1 : Initialiser un dépôt Git
+================================================================================
+
+Commande :
+----------
+git init
+
+Vérification :
+--------------
+ls -la .git/
+
+Résultat :
+----------
+ Dépôt Git initialisé avec succès
+ Dossier .git/ créé
+
+
+================================================================================
+ÉTAPE 2 : Initialiser DVC
+================================================================================
+
+Commande :
+----------
+dvc init
+
+Vérification :
+--------------
+ls -la .dvc/
+
+Résultat :
+----------
+ DVC initialisé avec succès
+ Dossier .dvc/ créé avec les fichiers de configuration
+
+
+================================================================================
+ÉTAPE 3 : Vérifier la création du dossier .dvc/
+================================================================================
+
+Commande :
+----------
+ls -la .dvc/
+
+Contenu du dossier .dvc/ :
+--------------------------
+- config          : Configuration DVC
+- .gitignore      : Fichiers à ignorer
+- plots/          : Dossier pour les graphiques
+- tmp/            : Fichiers temporaires
+
+Résultat :
+----------
+ Structure DVC correctement créée
+
+
+================================================================================
+ÉTAPE 4 : Ajouter le fichier iris.csv à DVC
+================================================================================
+
+Script de génération (generate_iris.py) :
+------------------------------------------
+from sklearn.datasets import load_iris
+import pandas as pd
+
+# Load iris dataset
+iris = load_iris(as_frame=True)
+# Create DataFrame
+df = iris.frame
+# Rename 'target' column to 'species'
+df = df.rename(columns={'target': 'species'})
+# Save to CSV
+df.to_csv("data/iris.csv", index=False)
+print("iris.csv generated successfully")
+
+Exécution :
+-----------
+python generate_iris.py
+
+Ajout à DVC :
+-------------
+dvc add data/iris.csv
+
+Résultat :
+----------
+ Fichier iris.csv généré (151 lignes : 1 en-tête + 150 données)
+ Fichier data/iris.csv.dvc créé
+ Fichier data/.gitignore mis à jour
+
+
+================================================================================
+ÉTAPE 5 : Vérifier les fichiers générés (.dvc, cache)
+================================================================================
+
+Fichiers générés :
+------------------
+1. data/iris.csv.dvc
+   Contenu :
+   outs:
+   - md5: 4d301abed5efe50eccda350cde38e0eb
+     size: 2777
+     hash: md5
+     path: iris.csv
+
+2. data/.gitignore
+   Contenu :
+   /iris.csv
+
+3. Cache DVC :
+   .dvc/cache/files/md5/4d/301abed5efe50eccda350cde38e0eb
+
+Résultat :
+----------
+ Fichier .dvc créé avec hash MD5
+ Données stockées dans le cache DVC
+ .gitignore mis à jour pour ignorer iris.csv
+
+
+================================================================================
+ÉTAPE 6 : Ajouter les bons fichiers à Git
+================================================================================
+
+Commandes :
+-----------
+git add data/iris.csv.dvc data/.gitignore
+git add .dvc/.gitignore .dvc/config
+
+Résultat :
+----------
+ Fichiers DVC ajoutés à Git
+ Données brutes (iris.csv) ignorées par Git
+
+
+================================================================================
+ÉTAPE 7 : Effectuer un commit nommé "Dataset v1"
+================================================================================
+
+Commande :
+----------
+git commit -m "Dataset v1"
+
+Résultat :
+----------
+[HEAD détachée 4c4acb5] Dataset v1
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+ Commit "Dataset v1" créé avec succès
+ Version initiale du dataset trackée
+
+
+================================================================================
+ÉTAPE 8 : Modifier le dataset (supprimer ou ajouter des lignes)
+================================================================================
+
+Modification effectuée :
+------------------------
+- Dataset original : 151 lignes
+- Dataset modifié : 50 lignes (réduction)
+
+Commande utilisée :
+-------------------
+head -100 data/iris.csv | tail -50 > /tmp/iris_subset.csv
+mv /tmp/iris_subset.csv data/iris.csv
+
+Résultat :
+----------
+ Dataset modifié (de 151 à 50 lignes)
+
+
+================================================================================
+ÉTAPE 9 : Ajouter à nouveau les données avec DVC
+================================================================================
+
+Commande :
+----------
+dvc add data/iris.csv
+
+Résultat :
+----------
+ Nouveau hash MD5 généré : d4153c7a8440ed58f47359f484a2b43e
+ Fichier data/iris.csv.dvc mis à jour
+ Nouvelle version stockée dans le cache
+
+
+================================================================================
+ÉTAPE A : Créer un nouveau commit "Dataset v2"
+================================================================================
+
+Commandes :
+-----------
+git add data/iris.csv.dvc
+git commit -m "Dataset v2"
+
+Résultat :
+----------
+[HEAD détachée 0d72b13] Dataset v2
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+ Commit "Dataset v2" créé avec succès
+ Deuxième version du dataset trackée
+
+
+================================================================================
+ÉTAPE B : Comparer les deux versions via Git
+================================================================================
+
+Commande :
+----------
+git show 4c4acb5:data/iris.csv.dvc
+git show 0d72b13:data/iris.csv.dvc
+
+Comparaison :
+-------------
+
+Dataset v1 (commit 4c4acb5) :
+-----------------------------
+outs:
+- md5: 4d301abed5efe50eccda350cde38e0eb
+  size: 2777
+  hash: md5
+  path: iris.csv
+
+Dataset v2 (commit 0d72b13) :
+-----------------------------
+outs:
+- md5: d4153c7a8440ed58f47359f484a2b43e
+  size: 900
+  hash: md5
+  path: iris.csv
+
+Différences :
+-------------
+- MD5 différent : Les données ont changé
+- Taille différente : 2777 bytes → 900 bytes
+- Nombre de lignes : 151 → 50
+
+Résultat :
+----------
+ Les deux versions sont distinctes et trackées
+ Possibilité de basculer entre les versions avec Git + DVC
+
+
+================================================================================
+PARTIE BONUS : PIPELINE DVC
+================================================================================
+
+1. Script train.py créé :
+-------------------------
+- Charge data/iris.csv
+- Entraîne un modèle RandomForest
+- Sauvegarde le modèle dans model.pkl
+
+2. Pipeline DVC (dvc.yaml) :
+----------------------------
+stages:
+  preprocess:
+    cmd: python train.py
+    deps:
+    - data/iris.csv
+    outs:
+    - data/processed/preprocessed.csv
+  
+  train:
+    cmd: python train.py
+    deps:
+    - data/iris.csv
+    - train.py
+    outs:
+    - model.pkl
+
+3. Exécution du pipeline :
+--------------------------
+Commande :
+dvc repro
+
+Premier run :
+'data/iris.csv.dvc' didn't change, skipping
+Stage 'preprocess' didn't change, skipping
+Running stage 'train':
+Model trained and saved as model.pkl
+Updating lock file 'dvc.lock'
+
+Second run (sans changement) :
+'data/iris.csv.dvc' didn't change, skipping
+Stage 'preprocess' didn't change, skipping
+Stage 'train' didn't change, skipping
+Data and pipelines are up to date.
+
+Résultat :
+----------
+ Pipeline DVC fonctionnel
+ Détection automatique des changements
+ Optimisation : pas de ré-exécution inutile
+
+
+================================================================================
+CONFIGURATION DVC REMOTE
+================================================================================
+
+Commandes :
+-----------
+dvc remote add -d myremote /tmp/dvc-storage
+dvc push
+
+Résultat :
+----------
+ Remote DVC configuré
+ Données poussées vers le stockage distant
+ 2 fichiers poussés (iris.csv versions v1 et v2)
+
+
+================================================================================
+HISTORIQUE GIT COMPLET
+================================================================================
+
+git log --oneline :
+-------------------
+2f6f59e Update pipeline and fix iris.csv generation
+381e478 Update .gitignore and add helper files
+0d72b13 Dataset v2
+4c4acb5 Dataset v1
+d4b8fe0 Add train stage and update pipeline
+eaf0049 Add pipeline and related files
+1c020eb Configure DVC remote
+61f52f8 Track dataset with DVC
+28cae7c Allow tracking of data/.gitignore
+da001e7 Fix .gitignore to track DVC files
+16f3a13 Initialize DVC
+
+
+================================================================================
+FICHIERS LIVRABLES
+================================================================================
+
+Fichiers Git :
+--------------
+ .dvc/config                      : Configuration DVC
+ .dvc/.gitignore                  : Fichiers DVC à ignorer
+ data/iris.csv.dvc                : Pointeur vers le dataset
+ data/.gitignore                  : Ignore iris.csv
+ dvc.yaml                         : Définition du pipeline
+ dvc.lock                         : Lock file du pipeline
+ train.py                         : Script d'entraînement
+ generate_iris.py                 : Script de génération du dataset
+ .gitignore                       : Ignore model.pkl, mlflow.db
+
+Fichiers DVC (stockage distant) :
+----------------------------------
+ iris.csv (v1) : 2777 bytes, MD5: 4d301abed5efe50eccda350cde38e0eb
+ iris.csv (v2) : 900 bytes,  MD5: d4153c7a8440ed58f47359f484a2b43e
+ model.pkl     : 37680 bytes
+
+
+================================================================================
+COMMANDES PRINCIPALES UTILISÉES
+================================================================================
+
+Initialisation :
+----------------
+git init
+dvc init
+
+Versioning des données :
+-------------------------
+dvc add data/iris.csv
+git add data/iris.csv.dvc data/.gitignore
+git commit -m "Dataset v1"
+
+Pipeline :
+----------
+dvc stage add -n train -d train.py -d data/iris.csv -o model.pkl python train.py
+dvc repro
+
+Remote DVC :
+------------
+dvc remote add -d myremote /tmp/dvc-storage
+dvc push
+dvc pull
+
+Restauration :
+--------------
+git checkout <commit-hash> data/iris.csv.dvc
+dvc checkout
+
+
