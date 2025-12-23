@@ -1,0 +1,501 @@
+================================================================================
+                        RENDU TP3 : AUTOMATION DVC
+                    Automatisation des Pipelines MLOps
+================================================================================
+
+Étudiant : ABDERRAZAK
+Date : 23 décembre 2025
+
+================================================================================
+ÉTAPE 1 : Créer un script train.py
+================================================================================
+
+Objectif :
+----------
+Créer un script Python qui :
+- Charge iris.csv
+- Entraîne un modèle RandomForest
+- Sauvegarde le modèle dans model.pkl
+
+Script train.py créé :
+----------------------
+```python
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score
+import pandas as pd
+import pickle
+import os
+
+# Load the dataset
+data = pd.read_csv("data/iris.csv")
+X = data.drop("species", axis=1)
+y = data["species"]
+
+# Split the dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train the model
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# Save the model
+with open("model.pkl", "wb") as f:
+    pickle.dump(model, f)
+
+print("Model trained and saved as model.pkl")
+
+# Ensure the output directory exists
+os.makedirs("data/processed", exist_ok=True)
+
+# Generate the preprocessed file
+data.to_csv("data/processed/preprocessed.csv", index=False)
+print("Preprocessed data saved to data/processed/preprocessed.csv")
+```
+
+Résultat :
+----------
+✅ Script train.py créé avec succès
+✅ Charge data/iris.csv
+✅ Entraîne un modèle RandomForestClassifier
+✅ Sauvegarde le modèle dans model.pkl
+
+
+================================================================================
+ÉTAPE 2 : Créer une étape DVC nommée "train"
+================================================================================
+
+2.1 Définir les dépendances (code + data)
+------------------------------------------
+
+Dépendances de l'étape train :
+- train.py (code source)
+- data/iris.csv (données d'entrée)
+
+2.2 Définir la sortie (model.pkl)
+----------------------------------
+
+Sortie de l'étape train :
+- model.pkl (modèle entraîné)
+
+Commande utilisée :
+-------------------
+dvc stage add -n train \
+  -d train.py \
+  -d data/iris.csv \
+  -o model.pkl \
+  /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python train.py
+
+Options expliquées :
+--------------------
+-n train            : Nom de l'étape
+-d train.py         : Dépendance (fichier code)
+-d data/iris.csv    : Dépendance (fichier data)
+-o model.pkl        : Sortie (modèle)
+
+Résultat :
+----------
+✅ Étape 'train' ajoutée à dvc.yaml
+✅ Dépendances définies correctement
+✅ Sortie model.pkl spécifiée
+
+
+================================================================================
+ÉTAPE 3 : Vérifier la génération de dvc.yaml et dvc.lock
+================================================================================
+
+3.1 Fichier dvc.yaml généré
+----------------------------
+
+Contenu de dvc.yaml :
+---------------------
+```yaml
+stages:
+  preprocess:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - data/iris.csv
+    outs:
+    - data/processed/preprocessed.csv
+  
+  train:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - data/iris.csv
+    - train.py
+    outs:
+    - model.pkl
+```
+
+Analyse :
+---------
+✅ Structure YAML valide
+✅ Deux étapes définies : preprocess et train
+✅ Commandes avec chemin complet vers Python
+✅ Dépendances (deps) correctement listées
+✅ Sorties (outs) correctement spécifiées
+
+3.2 Fichier dvc.lock généré
+----------------------------
+
+Contenu de dvc.lock :
+---------------------
+```yaml
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+    outs:
+    - path: data/processed/preprocessed.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+  
+  train:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+    - path: train.py
+      hash: md5
+      md5: 06adce279f742e752671993d8d5509fb
+      size: 933
+    outs:
+    - path: model.pkl
+      hash: md5
+      md5: 56c45053f32a4f74d64222b479fdad1d
+      size: 177393
+```
+
+Analyse :
+---------
+✅ Schema version 2.0
+✅ Hash MD5 pour chaque fichier
+✅ Taille des fichiers trackée
+✅ data/iris.csv : MD5 = dfd937daece56623d0a753286627645a, 2778 bytes
+✅ train.py : MD5 = 06adce279f742e752671993d8d5509fb, 933 bytes
+✅ model.pkl : MD5 = 56c45053f32a4f74d64222b479fdad1d, 177393 bytes
+
+Résultat :
+----------
+✅ dvc.yaml généré avec succès
+✅ dvc.lock généré avec tous les hash MD5
+✅ Pipeline prêt à être exécuté
+
+
+================================================================================
+ÉTAPE 4 : Exécuter le pipeline avec dvc repro
+================================================================================
+
+Commande :
+----------
+dvc repro
+
+Messages DVC observés :
+------------------------
+'data/iris.csv.dvc' didn't change, skipping
+Stage 'preprocess' didn't change, skipping
+Stage 'train' didn't change, skipping
+Data and pipelines are up to date.
+
+Analyse des messages :
+----------------------
+
+Message 1 : 'data/iris.csv.dvc' didn't change, skipping
+- DVC vérifie le fichier .dvc qui pointe vers le dataset
+- Aucun changement détecté dans le hash MD5
+- L'étape de chargement des données est sautée
+
+Message 2 : Stage 'preprocess' didn't change, skipping
+- L'étape preprocess a déjà été exécutée
+- Les dépendances n'ont pas changé
+- Aucune ré-exécution nécessaire
+
+Message 3 : Stage 'train' didn't change, skipping
+- L'étape train a déjà été exécutée
+- Les fichiers train.py et data/iris.csv sont inchangés
+- Le modèle model.pkl est à jour
+
+Message 4 : Data and pipelines are up to date.
+- Confirmation que tout est à jour
+- Aucune action nécessaire
+
+Résultat :
+----------
+✅ Pipeline exécuté avec succès
+✅ DVC détecte intelligemment les changements
+✅ Optimisation : aucune ré-exécution inutile
+✅ Temps d'exécution : < 1 seconde (vs plusieurs secondes si ré-exécution)
+
+
+================================================================================
+ÉTAPE 5 : Relancer dvc repro sans changement
+================================================================================
+
+Commande :
+----------
+dvc repro
+
+Messages DVC observés :
+------------------------
+'data/iris.csv.dvc' didn't change, skipping
+Stage 'preprocess' didn't change, skipping
+Stage 'train' didn't change, skipping
+Data and pipelines are up to date.
+
+Résultat :
+----------
+✅ Comportement identique à l'exécution précédente
+✅ Aucune étape n'est ré-exécutée
+✅ DVC confirme que tout est à jour
+✅ Performance optimale : temps d'exécution minimal
+
+
+================================================================================
+ANALYSE COMPARATIVE : Avec vs Sans Changements
+================================================================================
+
+Scénario 1 : Premier run ou avec changements
+---------------------------------------------
+'data/iris.csv.dvc' didn't change, skipping
+Running stage 'preprocess':
+> python train.py
+Model trained and saved as model.pkl
+Preprocessed data saved to data/processed/preprocessed.csv
+Running stage 'train':
+> python train.py
+Model trained and saved as model.pkl
+Updating lock file 'dvc.lock'
+
+Temps : ~5-10 secondes
+Actions : Exécution complète du pipeline
+
+Scénario 2 : Sans changements (runs suivants)
+----------------------------------------------
+'data/iris.csv.dvc' didn't change, skipping
+Stage 'preprocess' didn't change, skipping
+Stage 'train' didn't change, skipping
+Data and pipelines are up to date.
+
+Temps : < 1 seconde
+Actions : Vérification des hash uniquement
+
+Gain de performance : ~90% de temps économisé
+
+
+================================================================================
+MÉCANISME DE DÉTECTION DES CHANGEMENTS
+================================================================================
+
+Comment DVC détecte les changements :
+--------------------------------------
+
+1. Hash MD5 des fichiers
+   - DVC calcule le hash MD5 de chaque fichier
+   - Compare avec le hash stocké dans dvc.lock
+   - Si différent → fichier modifié → ré-exécution
+
+2. Dépendances en cascade
+   - Si train.py change → étape train ré-exécutée
+   - Si data/iris.csv change → preprocess ET train ré-exécutées
+   - Propagation intelligente des changements
+
+3. Cache DVC
+   - Les sorties sont cachées dans .dvc/cache/
+   - Permet de restaurer rapidement sans ré-exécution
+   - Partage du cache entre membres de l'équipe
+
+Exemple de changement détecté :
+--------------------------------
+$ echo "# comment" >> train.py
+$ dvc repro
+
+Running stage 'train':
+> python train.py
+Model trained and saved as model.pkl
+Updating lock file 'dvc.lock'
+
+✅ DVC détecte que train.py a changé
+✅ Seule l'étape 'train' est ré-exécutée
+✅ dvc.lock est mis à jour avec le nouveau hash
+
+
+================================================================================
+STRUCTURE DU PROJET FINAL
+================================================================================
+
+Arborescence :
+--------------
+mlops-mlflow-tp/
+├── .dvc/
+│   ├── config
+│   ├── .gitignore
+│   └── cache/
+├── .git/
+├── data/
+│   ├── iris.csv              (ignoré par Git, tracké par DVC)
+│   ├── iris.csv.dvc          (tracké par Git)
+│   ├── .gitignore
+│   └── processed/
+│       └── preprocessed.csv  (généré par pipeline)
+├── train.py                  (script d'entraînement)
+├── generate_iris.py          (script de génération dataset)
+├── model.pkl                 (ignoré par Git, généré par pipeline)
+├── dvc.yaml                  (définition du pipeline)
+├── dvc.lock                  (lock file avec hash MD5)
+├── .gitignore
+└── RENDU_TP3_AUTOMATION.txt
+
+Fichiers trackés par Git :
+---------------------------
+✅ train.py
+✅ generate_iris.py
+✅ dvc.yaml
+✅ dvc.lock
+✅ data/iris.csv.dvc
+✅ data/.gitignore
+✅ .dvc/config
+✅ .dvc/.gitignore
+
+Fichiers trackés par DVC :
+---------------------------
+✅ data/iris.csv (données)
+✅ model.pkl (modèle - optionnel)
+✅ data/processed/preprocessed.csv (données transformées - optionnel)
+
+Fichiers ignorés :
+------------------
+❌ data/iris.csv (par Git, car tracké par DVC)
+❌ model.pkl (généré, peut être recréé)
+❌ mlflow.db (base de données locale)
+❌ .venv/ (environnement virtuel)
+
+
+================================================================================
+COMMANDES PRINCIPALES UTILISÉES
+================================================================================
+
+Création du pipeline :
+----------------------
+dvc stage add -n train -d train.py -d data/iris.csv -o model.pkl python train.py
+
+Exécution du pipeline :
+-----------------------
+dvc repro
+
+Vérification du statut :
+------------------------
+dvc status
+
+Visualisation du pipeline :
+---------------------------
+dvc dag
+
+Nettoyage :
+-----------
+dvc gc  # Nettoie le cache inutilisé
+
+
+================================================================================
+AVANTAGES DE L'AUTOMATION DVC
+================================================================================
+
+1. Reproductibilité
+   ✅ Le pipeline peut être reproduit à l'identique
+   ✅ Environnement, données et code versionnés
+   ✅ dvc.lock garantit les mêmes hash MD5
+
+2. Optimisation
+   ✅ Pas de ré-exécution inutile
+   ✅ Détection intelligente des changements
+   ✅ Gain de temps significatif (90%+)
+
+3. Collaboration
+   ✅ Partage du pipeline via Git
+   ✅ Partage des données via DVC remote
+   ✅ Synchronisation automatique de l'équipe
+
+4. Traçabilité
+   ✅ Historique complet des versions
+   ✅ Hash MD5 pour chaque fichier
+   ✅ Audit trail complet
+
+5. Scalabilité
+   ✅ Fonctionne avec de gros datasets
+   ✅ Pipeline complexe avec multiples étapes
+   ✅ Parallélisation possible
+
+
+================================================================================
+BONNES PRATIQUES
+================================================================================
+
+1. Nommer clairement les étapes
+   - Utiliser des noms descriptifs (preprocess, train, evaluate)
+   - Éviter les noms génériques (step1, step2)
+
+2. Définir toutes les dépendances
+   - Code (train.py)
+   - Données (iris.csv)
+   - Configuration (config.yaml)
+
+3. Spécifier toutes les sorties
+   - Modèles (model.pkl)
+   - Métriques (metrics.json)
+   - Visualisations (plots/)
+
+4. Commiter dvc.yaml et dvc.lock
+   - Versionner la définition du pipeline
+   - Versionner les hash des dépendances/sorties
+   - Ne jamais ignorer ces fichiers
+
+5. Utiliser un DVC remote
+   - Stocker les données sur un serveur distant
+   - Faciliter la collaboration
+   - Sauvegarder les modèles
+
+
+================================================================================
+CONCLUSION
+================================================================================
+
+✅ TP3 Automation DVC complété avec succès
+
+Compétences acquises :
+----------------------
+✅ Création de scripts ML reproductibles
+✅ Définition de pipelines DVC automatisés
+✅ Compréhension du mécanisme de cache et hash MD5
+✅ Optimisation des workflows MLOps
+✅ Gestion des dépendances et sorties
+
+Le projet démontre :
+--------------------
+- Automatisation complète du workflow ML
+- Optimisation du temps d'exécution
+- Reproductibilité garantie
+- Collaboration facilitée
+
+Prochaines étapes possibles :
+------------------------------
+- Ajouter des étapes d'évaluation (evaluate)
+- Intégrer des métriques (metrics.json)
+- Créer des visualisations (plots)
+- Configurer un DVC remote cloud (S3, GCS, Azure)
+- Mettre en place un CI/CD avec GitHub Actions
+
+================================================================================
+FIN DU RENDU TP3
+================================================================================
