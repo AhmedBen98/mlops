@@ -3,3 +3,4 @@ data/*
 \!data/**/.gitignore
 models/
 !data/**/*.dvc
+!data/.gitignore
