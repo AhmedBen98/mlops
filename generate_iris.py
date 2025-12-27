@@ -1,5 +1,9 @@
 from sklearn.datasets import load_iris
 import pandas as pd
+import os
+
+# Create data directory if it doesn't exist
+os.makedirs("data", exist_ok=True)
 
 # Load iris dataset
 iris = load_iris(as_frame=True)
