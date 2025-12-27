@@ -1,0 +1,172 @@
+name: ML Pipeline CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  ml-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Nécessaire pour DVC
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install dvc
+    
+    - name: Configure DVC
+      run: |
+        # Si vous utilisez DVC avec un remote storage, configurez-le ici
+        # Par exemple pour Google Drive, S3, Azure, etc.
+        # dvc remote modify myremote --local access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        # dvc remote modify myremote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        echo "DVC configured"
+    
+    - name: Generate dataset
+      run: |
+        python generate_iris.py
+    
+    - name: Pull DVC data
+      run: |
+        # Si vous avez un remote DVC configuré, décommentez la ligne suivante
+        # dvc pull
+        echo "DVC data ready"
+      continue-on-error: true
+    
+    - name: Run DVC pipeline
+      run: |
+        dvc repro
+      env:
+        MLFLOW_TRACKING_URI: file:./mlruns
+    
+    - name: Evaluate model
+      run: |
+        python -c "
+        import pickle
+        import pandas as pd
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+        import json
+        
+        # Load model
+        with open('model.pkl', 'rb') as f:
+            model = pickle.load(f)
+        
+        # Load data
+        data = pd.read_csv('data/iris.csv')
+        X = data.drop('species', axis=1)
+        y = data['species']
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        # Predictions
+        y_pred = model.predict(X_test)
+        
+        # Calculate metrics
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted')
+        recall = recall_score(y_test, y_pred, average='weighted')
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        
+        # Display metrics
+        print('=' * 50)
+        print('MODEL EVALUATION RESULTS')
+        print('=' * 50)
+        print(f'Accuracy:  {accuracy:.4f}')
+        print(f'Precision: {precision:.4f}')
+        print(f'Recall:    {recall:.4f}')
+        print(f'F1 Score:  {f1:.4f}')
+        print('=' * 50)
+        
+        # Save metrics to file
+        metrics = {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1
+        }
+        
+        with open('metrics.json', 'w') as f:
+            json.dump(metrics, f, indent=2)
+        
+        print('Metrics saved to metrics.json')
+        
+        # Validation threshold
+        if accuracy < 0.85:
+            print('WARNING: Model accuracy below threshold (0.85)')
+            exit(1)
+        else:
+            print('SUCCESS: Model passed validation!')
+        "
+    
+    - name: Upload model artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: trained-model
+        path: model.pkl
+    
+    - name: Upload metrics
+      uses: actions/upload-artifact@v3
+      with:
+        name: metrics
+        path: metrics.json
+    
+    - name: Upload MLflow runs
+      uses: actions/upload-artifact@v3
+      with:
+        name: mlflow-runs
+        path: mlruns/
+      if: always()
+    
+    - name: Comment PR with metrics
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const metrics = JSON.parse(fs.readFileSync('metrics.json', 'utf8'));
+          
+          const comment = `##  ML Pipeline Results
+          
+          | Metric | Value |
+          |--------|-------|
+          | Accuracy | ${(metrics.accuracy * 100).toFixed(2)}% |
+          | Precision | ${(metrics.precision * 100).toFixed(2)}% |
+          | Recall | ${(metrics.recall * 100).toFixed(2)}% |
+          | F1 Score | ${(metrics.f1_score * 100).toFixed(2)}% |
+          
+          Pipeline completed successfully!
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

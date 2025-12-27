@@ -1,4 +1,91 @@
-# Projet MLOps avec MLflow
+# Projet MLOps avec MLflow, DVC et CI/CD
+
+[![CI/CD Pipeline](https://github.com/AhmedBen98/mlops/actions/workflows/ml-pipeline.yml/badge.svg)](https://github.com/AhmedBen98/mlops/actions)
+
+##  Quick Start
+
+### Installation
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/AhmedBen98/mlops.git
+cd mlops
+
+# Créer un environnement virtuel
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate  # Windows
+
+# Installer les dépendances
+pip install -r requirements.txt
+pip install dvc
+```
+
+### Exécution
+
+```bash
+# Générer les données
+python generate_iris.py
+
+# Exécuter le pipeline DVC
+dvc repro
+
+# Visualiser MLflow
+mlflow ui
+```
+
+##  Structure du projet
+
+```
+mlops/
+├── .github/
+│   └── workflows/
+│       └── ml-pipeline.yml    # Pipeline CI/CD
+├── data/
+│   ├── iris.csv              # Dataset (tracké par DVC)
+│   └── processed/            # Données prétraitées
+├── train.py                  # Script d'entraînement
+├── generate_iris.py          # Génération du dataset
+├── dvc.yaml                  # Pipeline DVC
+├── requirements.txt          # Dépendances Python
+└── GUIDE_CONFIGURATION_CICD.md  # Documentation complète
+```
+
+##  Pipeline CI/CD
+
+Le pipeline GitHub Actions s'exécute automatiquement sur chaque push et:
+1. - Installe les dépendances
+2. - Exécute le pipeline DVC
+3. - Entraîne le modèle
+4. - Valide les performances (accuracy ≥ 85%)
+5. - Upload les artefacts (modèle, métriques, runs MLflow)
+
+##  Tracking avec MLflow
+
+Chaque exécution crée un nouveau run MLflow avec:
+- Hyperparamètres (n_estimators, max_depth, etc.)
+- Métriques (accuracy, precision, recall, F1-score)
+- Modèle sauvegardé
+- Artefacts
+
+##  Documentation complète
+
+Consultez [GUIDE_CONFIGURATION_CICD.md](./GUIDE_CONFIGURATION_CICD.md) pour:
+- Configuration détaillée de GitHub Actions
+- Étapes de configuration du CI/CD
+- Tests et validation du pipeline
+- Traçabilité avec MLflow
+- Résolution des problèmes courants
+
+##  Technologies utilisées
+
+- **Python 3.10**
+- **Scikit-learn**: Machine Learning
+- **MLflow**: Tracking des expérimentations
+- **DVC**: Versioning des données et pipelines
+- **GitHub Actions**: CI/CD
+
+---
 
 ## Explication complète du fichier `train.py`
 
