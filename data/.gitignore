@@ -1,4 +1,0 @@
-# Ignore all files in this directory
-data/*
-# Except DVC-tracked files
-!*.dvc
