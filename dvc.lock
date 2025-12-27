@@ -1,0 +1,32 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+    outs:
+    - path: data/processed/preprocessed.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+  train:
+    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
+      train.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: dfd937daece56623d0a753286627645a
+      size: 2778
+    - path: train.py
+      hash: md5
+      md5: 06adce279f742e752671993d8d5509fb
+      size: 933
+    outs:
+    - path: model.pkl
+      hash: md5
+      md5: 56c45053f32a4f74d64222b479fdad1d
+      size: 177393

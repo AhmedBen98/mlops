@@ -1,8 +1,14 @@
 stages:
-  preprocess:
-    cmd: /home/abenabderrazak/Documents/mlops-mlflow-tp/.venv/bin/python 
-      train.py
+  generate_data:
+    cmd: python generate_iris.py
+    outs:
+    - data/iris.csv
+  
+  train:
+    cmd: python train.py
     deps:
     - data/iris.csv
+    - train.py
     outs:
     - data/processed/preprocessed.csv
+    - model.pkl

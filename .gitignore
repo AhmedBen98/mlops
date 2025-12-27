@@ -1,6 +1,6 @@
 data/*
-\!data/**/*.dvc
-\!data/**/.gitignore
-models/
 !data/**/*.dvc
-!data/.gitignore
+!data/**/.gitignore
+models/
+/model.pkl
+mlflow.db
