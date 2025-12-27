@@ -12,10 +12,10 @@ X = data.drop("species", axis=1)
 y = data["species"]
 
 # Split the dataset
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=123)
 
 # Train the model
-model = RandomForestClassifier(random_state=42)
+model = RandomForestClassifier(n_estimators=50, max_depth=5, random_state=123)
 model.fit(X_train, y_train)
 
 # Save the model
